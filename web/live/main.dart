@@ -78,7 +78,11 @@ class _MyHomePageState extends State<MyHomePage> {
   void _textSubmitted(String value) {
     // First strip inline comments (space + #) then remove all whitespace
     final withoutComments = SearchStringHelper.stripComments(value);
-    final sanitized = withoutComments.replaceAll(RegExp(r'\s+'), '');
+    String preprocessed = withoutComments
+      .replaceAll(RegExp(r'\bOR\b', caseSensitive: false), ',')
+      .replaceAll(RegExp(r'\bAND\b', caseSensitive: false), '&')
+      .replaceAll(RegExp(r'\bNOT\b', caseSensitive: false), '!');
+    final sanitized = preprocessed.replaceAll(RegExp(r'\s+'), '');
     try {
       final pg = PrecedenceGraph.fromString(sanitized);
       setState(() {
@@ -146,7 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
-                      "You can use brackets () and add comments with #",
+                      "You can use brackets (), add comments with #, and use ',' or OR for OR; '&' or AND for AND (case-insensitive)",
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     Container(
@@ -159,7 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: TextField(
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
-                                hintText: "Desired pokemon search string",
+                                hintText: "Desired pokemon search string — e.g. (A OR B) AND (C, D) #comment",
                               ),
                               keyboardType: TextInputType.multiline,
                               minLines: 3,

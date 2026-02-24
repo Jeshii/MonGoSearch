@@ -32,11 +32,11 @@ void configureLogging({Level level = Level.INFO}) {
 int debugLevel = 0;
 const String orChar = ',';
 const String andChar = '&';
-const orSepString = "(:|,|;)";
-const andSepString = "&";
-const allValidCharacters = ",:;&|";
-Pattern orSepPattern = RegExp(orSepString);
-Pattern andSepPattern = RegExp(andSepString);
+const orSepString = "(:|,|;|\\bOR\\b)";
+const andSepString = "(&|\\bAND\\b)";
+const allValidCharacters = ",:;&|A-Za-z0-9";
+Pattern orSepPattern = RegExp(orSepString, caseSensitive: false);
+Pattern andSepPattern = RegExp(andSepString, caseSensitive: false);
 Pattern bracketPatterns = RegExp(r"\)[^" +
     allValidCharacters +
     r")]|"
