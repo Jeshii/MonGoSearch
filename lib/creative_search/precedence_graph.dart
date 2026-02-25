@@ -34,7 +34,8 @@ const String orChar = ',';
 const String andChar = '&';
 const orSepString = "(:|,|;|\\bOR\\b)";
 const andSepString = "(&|\\bAND\\b)";
-const allValidCharacters = ",:;&|A-Za-z0-9";
+// Allow hyphen (for ranges like 0-3attack), exclamation (negation), and asterisk (stars)
+const allValidCharacters = ",:;&|A-Za-z0-9\\-!\\*";
 Pattern orSepPattern = RegExp(orSepString, caseSensitive: false);
 Pattern andSepPattern = RegExp(andSepString, caseSensitive: false);
 Pattern bracketPatterns = RegExp(r"\)[^" +
@@ -48,13 +49,14 @@ enum Operands { or, and }
 
 Operands opFromString(String sep) {
   _log.fine("op from:" + sep);
-  String firstChar = sep.characters.first;
-  if (firstChar.contains(orSepPattern)) {
+  // Match the full separator string against the operand patterns so we
+  // tolerate surrounding whitespace and multi-character tokens like AND/OR.
+  if (sep.contains(orSepPattern)) {
     return Operands.or;
-  } else if (firstChar.contains(andSepPattern)) {
+  } else if (sep.contains(andSepPattern)) {
     return Operands.and;
   }
-  throw "Illegal operand";
+  throw "Illegal operand: '$sep'";
 }
 
 String getOperandLongName(Operands operand) {
@@ -127,31 +129,54 @@ abstract class PrecedenceNode {
 
 class PrecedenceLeaf extends PrecedenceNode {
   final String content;
-  PrecedenceLeaf(this.content, PrecedenceNode? parent) : super(parent, null) {
+  final bool negated;
+  PrecedenceLeaf(this.content, PrecedenceNode? parent, {this.negated = false})
+      : super(parent, null) {
     if (debugLevel > 0) {
       var num = node.key!.value;
-      nodeNames[node] = "$num " + content;
+      nodeNames[node] = "$num " + (negated ? "!" : "") + content;
     } else {
-      nodeNames[node] = content;
+      nodeNames[node] = (negated ? "!" : "") + content;
     }
   }
   PrecedenceLeaf.foster(String content) : this(content, null);
   @override
   String getString() {
-    return content;
+    return (negated ? '!': '') + content;
   }
 
   @override
   String getInvertedString() {
-    return SearchStringHelper.invertToken(content);
+    // invert(NOT A) => A
+    if (negated) return content;
+    // otherwise produce the full-trash inverted representation
+    return SearchStringHelper.generateFullTrashString(content);
   }
 
   static List<PrecedenceNode> fromStrings(
       List<String> strings, PrecedenceNode parent) {
     List<PrecedenceNode> output = <PrecedenceLeaf>[];
-    for (String string in strings) {
+    for (String raw in strings) {
+      String string = raw.trim();
+      if (string.isEmpty) continue;
+      bool neg = false;
+      // Recognize leading '!'
+      if (string.startsWith('!')) {
+        neg = true;
+        string = string.substring(1).trim();
+      } else {
+        // Recognize textual NOT (case-insensitive) as a prefix
+        final up = string.toUpperCase();
+        if (up.startsWith('NOT')) {
+          String rest = string.substring(3).trim();
+          if (rest.isNotEmpty) {
+            neg = true;
+            string = rest;
+          }
+        }
+      }
       if (string.isNotEmpty) {
-        PrecedenceLeaf leaf = PrecedenceLeaf(string, parent);
+        PrecedenceLeaf leaf = PrecedenceLeaf(string, parent, negated: neg);
         parent.register(leaf);
       }
     }
@@ -169,7 +194,7 @@ class PrecedenceLeaf extends PrecedenceNode {
   }
   @override
   void debugPrint() {
-    _log.fine("|Leaf:" + content);
+    _log.fine("|Leaf:" + (negated ? '!' : '') + content);
   }
 
   @override
