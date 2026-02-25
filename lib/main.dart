@@ -152,9 +152,28 @@ class _MyHomePageState extends State<MyHomePage> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text(
-                      "You can use brackets (), add comments with #, and use ',' or OR for OR; '&' or AND for AND (case-insensitive)",
-                      style: Theme.of(context).textTheme.headlineMedium,
+                    ExpansionTile(
+                      title: Text(
+                        'Syntax help',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              SizedBox(height: 8),
+                              Text('- OR: use "," or the word OR (case-insensitive)'),
+                              Text('- AND: use "&" or the word AND (case-insensitive)'),
+                              Text('- NOT: use "!" or the word NOT (case-insensitive)'),
+                              Text('- Parentheses () may be used to group expressions'),
+                              Text('- Comments: add a space then # to comment to end of line'),
+                              SizedBox(height: 8),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     Container(
                       constraints: const BoxConstraints(maxWidth: 750),
